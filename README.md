@@ -316,6 +316,19 @@ export REEVIT_WEBHOOK_SECRET=whsec_xxx  # Get from Dashboard > Developers > Webh
 
 ---
 
+## Release Notes
+
+### v0.3.0
+
+- Updated API client to connect to production and sandbox URLs based on API key
+- Added Bearer authentication headers for secure API communication
+- Added Get, Confirm, and Cancel methods to the payments service
+- Removed orgID parameter from client initialization (simplified API)
+- Added .gitignore file to exclude unnecessary files from version control
+- Updated README.md with corrected quick start example
+
+---
+
 ## Support
 
 - **Documentation**: [https://docs.reevit.io](https://docs.reevit.io)
