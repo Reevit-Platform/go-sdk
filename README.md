@@ -2,13 +2,13 @@
 
 The official Go SDK for [Reevit](https://reevit.io) — a unified payment orchestration platform for Africa.
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/Reevit-Platform/backend/sdks/go.svg)](https://pkg.go.dev/github.com/Reevit-Platform/backend/sdks/go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/Reevit-Platform/go-sdk.svg)](https://pkg.go.dev/github.com/Reevit-Platform/go-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Installation
 
 ```bash
-go get github.com/Reevit-Platform/backend/sdks/go
+go get github.com/Reevit-Platform/go-sdk
 ```
 
 ## Quick Start
@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"log"
 
-	reevit "github.com/Reevit-Platform/backend/sdks/go"
+	reevit "github.com/Reevit-Platform/go-sdk"
 )
 
 func main() {
@@ -298,7 +298,7 @@ func main() {
 For convenience, use the `webhooks` subpackage:
 
 ```go
-import "github.com/Reevit-Platform/backend/sdks/go/webhooks"
+import "github.com/Reevit-Platform/go-sdk/webhooks"
 
 // Verify signature
 isValid := webhooks.VerifySignature(body, signature, secret)

@@ -1,4 +1,4 @@
-module github.com/Reevit-Platform/backend/sdks/go
+module github.com/Reevit-Platform/go-sdk
 
 go 1.21
 
