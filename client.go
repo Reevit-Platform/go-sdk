@@ -14,7 +14,7 @@ import (
 const (
 	defaultBaseURLProduction = "https://api.reevit.io"
 	defaultBaseURLSandbox    = "https://sandbox-api.reevit.io"
-	userAgent                = "@reevit/go"
+	userAgent                = "@reevit/go v0.3.2"
 )
 
 // Client is the Reevit API client.

@@ -17,6 +17,7 @@ type PaymentIntentRequest struct {
 	Method     string                 `json:"method"`
 	Country    string                 `json:"country"`
 	CustomerID string                 `json:"customer_id,omitempty"`
+	Reference  string                 `json:"reference,omitempty"`
 	Policy     *FraudPolicyInput      `json:"policy,omitempty"`
 	Metadata   map[string]interface{} `json:"metadata,omitempty"`
 }
@@ -46,6 +47,7 @@ type Payment struct {
 	CustomerID    string                 `json:"customer_id"`
 	Metadata      map[string]interface{} `json:"metadata"`
 	Route         []PaymentRouteAttempt  `json:"route"`
+	Reference     string                 `json:"reference"`
 	CreatedAt     time.Time              `json:"created_at"`
 	UpdatedAt     time.Time              `json:"updated_at"`
 }
@@ -64,6 +66,7 @@ type PaymentSummary struct {
 	NetAmount    int64                  `json:"net_amount"`
 	CustomerID   string                 `json:"customer_id"`
 	Metadata     map[string]interface{} `json:"metadata"`
+	Reference    string                 `json:"reference"`
 	CreatedAt    time.Time              `json:"created_at"`
 }
 
