@@ -304,6 +304,17 @@ import "github.com/Reevit-Platform/go-sdk/webhooks"
 isValid := webhooks.VerifySignature(body, signature, secret)
 ```
 
+## Supported PSPs
+
+| Provider | Countries | Payment Methods |
+|----------|-----------|-----------------|
+| Paystack | NG, GH, ZA, KE | Card, Mobile Money, Bank Transfer |
+| Flutterwave | NG, GH, KE, ZA + | Card, Mobile Money, Bank Transfer |
+| Hubtel | GH | Mobile Money |
+| Stripe | Global (50+) | Card, Apple Pay, Google Pay |
+| Monnify | NG | Card, Bank Transfer, USSD |
+| M-Pesa | KE, TZ | Mobile Money (STK Push) |
+
 ---
 
 ## Environment Variables
@@ -317,6 +328,11 @@ export REEVIT_WEBHOOK_SECRET=whsec_xxx  # Get from Dashboard > Developers > Webh
 ---
 
 ## Release Notes
+
+### v0.5.0
+
+- Added support for Apple Pay and Google Pay
+- Updated supported PSPs and payment methods documentation
 
 ### v0.3.0
 
