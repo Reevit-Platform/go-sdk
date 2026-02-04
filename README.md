@@ -29,6 +29,11 @@ func main() {
 	client := reevit.NewClient("pfk_live_xxx")
 
 	// Create a payment intent
+	idempotencyKey := reevit.GenerateIdempotencyKey(map[string]any{
+		"amount":    45000,
+		"currency":  "GHS",
+		"reference": "order_12345",
+	})
 	payment, err := client.Payments.CreateIntent(context.Background(), &reevit.PaymentIntentRequest{
 		Amount:   45000,
 		Currency: "GHS",
@@ -37,13 +42,26 @@ func main() {
 		Metadata: map[string]interface{}{
 			"order_id": "12345",
 		},
-	})
+	}, reevit.WithIdempotencyKey(idempotencyKey))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Payment created: %s (Status: %s)\n", payment.ID, payment.Status)
+fmt.Printf("Payment created: %s (Status: %s)\n", payment.ID, payment.Status)
 }
+```
+
+## Idempotency
+
+Use `WithIdempotencyKey` to safely retry intent creation without creating duplicates.
+
+```go
+key := reevit.GenerateIdempotencyKey(map[string]any{
+	"amount":   45000,
+	"currency": "GHS",
+})
+
+payment, err := client.Payments.CreateIntent(ctx, req, reevit.WithIdempotencyKey(key))
 ```
 
 ## Services
