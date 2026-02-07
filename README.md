@@ -8,7 +8,7 @@ The official Go SDK for [Reevit](https://reevit.io) — a unified payment orches
 ## Installation
 
 ```bash
-go get github.com/Reevit-Platform/go-sdk@v0.5.0
+go get github.com/Reevit-Platform/go-sdk@v0.7.0
 ```
 
 ## Quick Start
@@ -346,6 +346,11 @@ export REEVIT_WEBHOOK_SECRET=whsec_xxx  # Get from Dashboard > Developers > Webh
 ---
 
 ## Release Notes
+
+### v0.7.0
+
+- Version alignment across all Reevit SDKs
+- Updated documentation and webhook examples
 
 ### v0.5.0
 
