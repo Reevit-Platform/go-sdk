@@ -25,6 +25,26 @@ jobs:
       - name: Build
         run: go build ./...
 
+      - name: Validate tracked package files
+        run: |
+          python3 - <<'PY'
+          import pathlib, subprocess, sys
+          root = pathlib.Path('.')
+          tracked = subprocess.check_output(['git', 'ls-files', '-z'], text=True).split('\0')
+          errors = []
+          for rel in filter(None, tracked):
+              if rel.endswith('.gitkeep'):
+                  continue
+              path = root / rel
+              if rel.endswith(('.new', '.tmp', '.bak', '.orig')):
+                  errors.append(f"tracked temp file: {rel}")
+              if path.is_file() and path.stat().st_size == 0:
+                  errors.append(f"empty tracked file: {rel}")
+          if errors:
+              print('\n'.join(errors))
+              sys.exit(1)
+          PY
+
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...
 

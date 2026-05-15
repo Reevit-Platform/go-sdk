@@ -8,7 +8,7 @@ The official Go SDK for [Reevit](https://reevit.io) — a unified payment orches
 ## Installation
 
 ```bash
-go get github.com/Reevit-Platform/go-sdk@v0.7.0
+go get github.com/Reevit-Platform/go-sdk@v0.9.0
 ```
 
 ## Quick Start
@@ -26,7 +26,7 @@ import (
 
 func main() {
 	// Initialize the client
-	client := reevit.NewClient("pfk_live_xxx")
+	client := reevit.NewClient("pfk_live_xxx", "org_123")
 
 	// Create a payment intent
 	idempotencyKey := reevit.GenerateIdempotencyKey(map[string]any{
@@ -51,6 +51,19 @@ fmt.Printf("Payment created: %s (Status: %s)\n", payment.ID, payment.Status)
 }
 ```
 
+## Server-created checkout sessions
+
+Create checkout sessions on your server and pass `session.SessionSecret` to the browser SDK.
+
+```go
+session, err := client.CheckoutSessions.Create(ctx, &reevit.PaymentIntentRequest{
+	Amount:   5000,
+	Currency: "GHS",
+	Method:   "mobile_money",
+	Country:  "GH",
+}, reevit.WithIdempotencyKey("order_12345"))
+```
+
 ## Idempotency
 
 Use `WithIdempotencyKey` to safely retry intent creation without creating duplicates.
@@ -66,10 +79,16 @@ payment, err := client.Payments.CreateIntent(ctx, req, reevit.WithIdempotencyKey
 
 ## Services
 
-- **Payments**: `client.Payments` (CreateIntent, Get, List, Refund)
-- **Connections**: `client.Connections` (Create, List, Test)
-- **Subscriptions**: `client.Subscriptions` (Create, List)
+- **Payments**: `client.Payments` (CreateIntent, Get, List, UpdateIntent, Confirm, ConfirmIntent, Cancel, Retry, Refund, GetStats)
+- **Connections**: `client.Connections` (Create, List, Get, Delete, Validate, ListAudit, UpdateLabels, UpdateStatus, Test)
+- **Subscriptions**: `client.Subscriptions` (Create, List, Get, Update, Cancel, Resume)
 - **Fraud**: `client.Fraud` (Get, Update)
+- **Customers**: `client.Customers`
+- **Payment Links**: `client.PaymentLinks`
+- **Checkout Sessions**: `client.CheckoutSessions`
+- **Webhooks**: `client.Webhooks`
+- **Routing Rules**: `client.RoutingRules`
+- **Invoices**: `client.Invoices`
 
 ---
 
@@ -347,13 +366,11 @@ export REEVIT_WEBHOOK_SECRET=whsec_xxx  # Get from Dashboard > Developers > Webh
 
 ## Release Notes
 
-### v0.7.0
+### v0.9.0
 
+- Added server-created checkout sessions
 - Version alignment across all Reevit SDKs
 - Updated documentation and webhook examples
-
-### v0.5.0
-
 - Added support for Apple Pay and Google Pay
 - Updated supported PSPs and payment methods documentation
 

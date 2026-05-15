@@ -21,9 +21,7 @@ type FraudPolicy struct {
 //
 // API Docs: GET /v1/policies/fraud
 func (s *FraudService) Get(ctx context.Context) (*FraudPolicy, error) {
-	path := "v1/policies/fraud"
-
-	httpRequest, err := s.client.newRequest(http.MethodGet, path, nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, "/v1/policies/fraud", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -39,12 +37,14 @@ func (s *FraudService) Get(ctx context.Context) (*FraudPolicy, error) {
 // Update updates the fraud policy.
 //
 // API Docs: POST /v1/policies/fraud
-func (s *FraudService) Update(ctx context.Context, policy *FraudPolicy) (*FraudPolicy, error) {
-	path := "v1/policies/fraud"
-
-	httpRequest, err := s.client.newRequest(http.MethodPost, path, policy)
+func (s *FraudService) Update(ctx context.Context, policy *FraudPolicy, opts ...RequestOption) (*FraudPolicy, error) {
+	httpRequest, err := s.client.newRequest(http.MethodPost, "/v1/policies/fraud", policy)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, opt := range opts {
+		opt(httpRequest)
 	}
 
 	var updatedPolicy FraudPolicy
