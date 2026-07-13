@@ -67,7 +67,9 @@ func NewClient(apiKey, orgID string, opts ...Option) *Client {
 		apiKey:  apiKey,
 		orgID:   orgID,
 		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
+			// 30s matches the Python/PHP SDK defaults; payment confirmation
+			// calls block on PSP round-trips that routinely exceed 10s.
+			Timeout: 30 * time.Second,
 		},
 	}
 
