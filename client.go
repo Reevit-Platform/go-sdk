@@ -37,6 +37,7 @@ type Client struct {
 	Webhooks         *WebhooksService
 	RoutingRules     *RoutingRulesService
 	Invoices         *InvoicesService
+	Payouts          *PayoutsService
 }
 
 type service struct {
@@ -88,6 +89,7 @@ func NewClient(apiKey, orgID string, opts ...Option) *Client {
 	c.Webhooks = (*WebhooksService)(&c.common)
 	c.RoutingRules = (*RoutingRulesService)(&c.common)
 	c.Invoices = (*InvoicesService)(&c.common)
+	c.Payouts = (*PayoutsService)(&c.common)
 
 	return c
 }
