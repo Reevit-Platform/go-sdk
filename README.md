@@ -80,7 +80,7 @@ payment, err := client.Payments.CreateIntent(ctx, req, reevit.WithIdempotencyKey
 ## Services
 
 - **Payments**: `client.Payments` (CreateIntent, Get, List, UpdateIntent, Confirm, ConfirmIntent, Cancel, Retry, Refund, GetStats)
-- **Connections**: `client.Connections` (Create, List, Get, Delete, Validate, ListAudit, UpdateLabels, UpdateStatus, Test)
+- **Connections**: `client.Connections` (Create, List, ListPage, ListAll, ListLabels, Get, Delete, Validate, ListAudit, UpdateLabels, UpdateStatus, Test)
 - **Subscriptions**: `client.Subscriptions` (Create, List, Get, Update, Cancel, Resume)
 - **Fraud**: `client.Fraud` (Get, Update)
 - **Customers**: `client.Customers`
@@ -89,6 +89,9 @@ payment, err := client.Payments.CreateIntent(ctx, req, reevit.WithIdempotencyKey
 - **Webhooks**: `client.Webhooks`
 - **Routing Rules**: `client.RoutingRules`
 - **Invoices**: `client.Invoices`
+
+Use `ListPage` when pagination metadata matters, or `ListAll` to fetch every
+connected PSP matching the supplied filters.
 
 ---
 
