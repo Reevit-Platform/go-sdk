@@ -174,12 +174,12 @@ func (s *PaymentsService) List(ctx context.Context, limit, offset int) ([]Paymen
 		return nil, err
 	}
 
-	var payments []PaymentSummary
-	if err := s.client.do(ctx, httpRequest, &payments); err != nil {
+	raw, err := s.client.doRaw(ctx, httpRequest)
+	if err != nil {
 		return nil, err
 	}
 
-	return payments, nil
+	return decodeArrayResponse[PaymentSummary](raw, "payments")
 }
 
 // Get retrieves a payment by ID.
