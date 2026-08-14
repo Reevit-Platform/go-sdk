@@ -14,7 +14,7 @@ import (
 
 const (
 	defaultBaseURL = "https://api.reevit.io"
-	userAgent      = "@reevit/go v0.9.1"
+	userAgent      = "@reevit/go v0.10.1"
 )
 
 // Client is the Reevit API client.
@@ -131,7 +131,7 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 	}
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("X-Reevit-Client", "@reevit/go")
-	req.Header.Set("X-Reevit-Client-Version", "0.9.1")
+	req.Header.Set("X-Reevit-Client-Version", "0.10.1")
 	if strings.TrimSpace(c.apiKey) != "" {
 		req.Header.Set("X-Reevit-Key", c.apiKey)
 	}
