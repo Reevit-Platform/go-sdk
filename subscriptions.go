@@ -95,12 +95,12 @@ func (s *SubscriptionsService) List(ctx context.Context, options ...Subscription
 		return nil, err
 	}
 
-	var subscriptions []Subscription
-	if err := s.client.do(ctx, httpRequest, &subscriptions); err != nil {
+	raw, err := s.client.doRaw(ctx, httpRequest)
+	if err != nil {
 		return nil, err
 	}
 
-	return subscriptions, nil
+	return decodeArrayResponse[Subscription](raw, "subscriptions")
 }
 
 // Get retrieves a subscription by ID.
