@@ -85,3 +85,27 @@ func TestDefaultClientKeepsThirtySecondTimeout(t *testing.T) {
 		t.Fatalf("Timeout = %v, want 30s", client.httpClient.Timeout)
 	}
 }
+
+// An id is merchant-controlled input. Before pathf it was interpolated raw, so
+// an id containing "/" or "?" rewrote the request path.
+func TestPathSegmentsAreEscapedOnTheWire(t *testing.T) {
+	t.Parallel()
+
+	var gotPath string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.EscapedPath()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"pay_1"}`))
+	}))
+	defer server.Close()
+
+	client := NewClient("pfk_test_key", "org_123", WithBaseURL(server.URL))
+	if _, err := client.Payments.Get(context.Background(), "pay_1/../../v1/admin?x=1"); err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+
+	want := "/v1/payments/pay_1%2F..%2F..%2Fv1%2Fadmin%3Fx=1"
+	if gotPath != want {
+		t.Fatalf("path = %q, want %q", gotPath, want)
+	}
+}

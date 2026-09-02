@@ -3,7 +3,6 @@ package reevit
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -186,7 +185,7 @@ func (s *PaymentsService) List(ctx context.Context, limit, offset int) ([]Paymen
 //
 // API Docs: GET /v1/payments/{id}
 func (s *PaymentsService) Get(ctx context.Context, paymentID string) (*Payment, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/payments/%s", paymentID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/payments/%s", paymentID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +202,7 @@ func (s *PaymentsService) Get(ctx context.Context, paymentID string) (*Payment, 
 //
 // API Docs: PATCH /v1/payments/intents/{id}
 func (s *PaymentsService) UpdateIntent(ctx context.Context, paymentID string, req *PaymentIntentUpdateRequest, opts ...RequestOption) (*Payment, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPatch, fmt.Sprintf("/v1/payments/intents/%s", paymentID), req)
+	httpRequest, err := s.client.newRequest(http.MethodPatch, pathf("/v1/payments/intents/%s", paymentID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +223,7 @@ func (s *PaymentsService) UpdateIntent(ctx context.Context, paymentID string, re
 //
 // API Docs: POST /v1/payments/{id}/confirm
 func (s *PaymentsService) Confirm(ctx context.Context, paymentID string, opts ...RequestOption) (*Payment, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPost, fmt.Sprintf("/v1/payments/%s/confirm", paymentID), map[string]interface{}{})
+	httpRequest, err := s.client.newRequest(http.MethodPost, pathf("/v1/payments/%s/confirm", paymentID), map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +249,7 @@ func (s *PaymentsService) ConfirmIntent(ctx context.Context, paymentID, clientSe
 
 	httpRequest, err := s.client.newRequest(
 		http.MethodPost,
-		buildPath(fmt.Sprintf("/v1/payments/%s/confirm-intent", paymentID), values),
+		buildPath(pathf("/v1/payments/%s/confirm-intent", paymentID), values),
 		map[string]interface{}{},
 	)
 	if err != nil {
@@ -273,7 +272,7 @@ func (s *PaymentsService) ConfirmIntent(ctx context.Context, paymentID, clientSe
 //
 // API Docs: POST /v1/payments/{id}/cancel
 func (s *PaymentsService) Cancel(ctx context.Context, paymentID string, opts ...RequestOption) (*Payment, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPost, fmt.Sprintf("/v1/payments/%s/cancel", paymentID), map[string]interface{}{})
+	httpRequest, err := s.client.newRequest(http.MethodPost, pathf("/v1/payments/%s/cancel", paymentID), map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +293,7 @@ func (s *PaymentsService) Cancel(ctx context.Context, paymentID string, opts ...
 //
 // API Docs: POST /v1/payments/{id}/retry
 func (s *PaymentsService) Retry(ctx context.Context, paymentID string, opts ...RequestOption) (*Payment, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPost, fmt.Sprintf("/v1/payments/%s/retry", paymentID), map[string]interface{}{})
+	httpRequest, err := s.client.newRequest(http.MethodPost, pathf("/v1/payments/%s/retry", paymentID), map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +314,7 @@ func (s *PaymentsService) Retry(ctx context.Context, paymentID string, opts ...R
 //
 // API Docs: POST /v1/payments/{id}/refund
 func (s *PaymentsService) Refund(ctx context.Context, paymentID string, req *RefundRequest, opts ...RequestOption) (*Refund, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPost, fmt.Sprintf("/v1/payments/%s/refund", paymentID), req)
+	httpRequest, err := s.client.newRequest(http.MethodPost, pathf("/v1/payments/%s/refund", paymentID), req)
 	if err != nil {
 		return nil, err
 	}

@@ -2,7 +2,6 @@ package reevit
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 )
@@ -79,7 +78,7 @@ func (s *RoutingRulesService) Create(ctx context.Context, req *RoutingRuleCreate
 
 // Get fetches a routing rule by ID.
 func (s *RoutingRulesService) Get(ctx context.Context, ruleID string) (*RoutingRule, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/routing-rules/%s", ruleID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/routing-rules/%s", ruleID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +93,7 @@ func (s *RoutingRulesService) Get(ctx context.Context, ruleID string) (*RoutingR
 
 // Update updates a routing rule.
 func (s *RoutingRulesService) Update(ctx context.Context, ruleID string, req *RoutingRuleUpdateRequest, opts ...RequestOption) (*RoutingRule, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPatch, fmt.Sprintf("/v1/routing-rules/%s", ruleID), req)
+	httpRequest, err := s.client.newRequest(http.MethodPatch, pathf("/v1/routing-rules/%s", ruleID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +112,7 @@ func (s *RoutingRulesService) Update(ctx context.Context, ruleID string, req *Ro
 
 // Delete removes a routing rule.
 func (s *RoutingRulesService) Delete(ctx context.Context, ruleID string, opts ...RequestOption) error {
-	httpRequest, err := s.client.newRequest(http.MethodDelete, fmt.Sprintf("/v1/routing-rules/%s", ruleID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodDelete, pathf("/v1/routing-rules/%s", ruleID), nil)
 	if err != nil {
 		return err
 	}

@@ -85,3 +85,50 @@ func TestDecodeArrayResponsePrefersLegacyKeyOverData(t *testing.T) {
 		t.Fatalf("decodeArrayResponse = %+v, want %+v", got, want)
 	}
 }
+
+func TestPathfEscapesEverySegment(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		format string
+		segs   []string
+		want   string
+	}{
+		{
+			name:   "plain id",
+			format: "/v1/payments/%s",
+			segs:   []string{"pay_123"},
+			want:   "/v1/payments/pay_123",
+		},
+		{
+			name:   "id with a slash cannot add a path segment",
+			format: "/v1/payments/%s",
+			segs:   []string{"pay_123/refund"},
+			want:   "/v1/payments/pay_123%2Frefund",
+		},
+		{
+			name:   "id with a query or fragment cannot truncate the path",
+			format: "/v1/payments/%s/confirm",
+			segs:   []string{"pay?a=1#b"},
+			want:   "/v1/payments/pay%3Fa=1%23b/confirm",
+		},
+		{
+			name:   "multiple segments",
+			format: "/v1/customers/%s/payments/%s",
+			segs:   []string{"cus/1", "pay/2"},
+			want:   "/v1/customers/cus%2F1/payments/pay%2F2",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := pathf(tt.format, tt.segs...); got != tt.want {
+				t.Fatalf("pathf = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

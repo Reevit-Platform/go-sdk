@@ -3,7 +3,6 @@ package reevit
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -247,7 +246,7 @@ func (s *ConnectionsService) ListAll(ctx context.Context, filters ConnectionList
 //
 // API Docs: GET /v1/connections/{id}
 func (s *ConnectionsService) Get(ctx context.Context, connectionID string) (*Connection, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/connections/%s", url.PathEscape(connectionID)), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/connections/%s", connectionID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +263,7 @@ func (s *ConnectionsService) Get(ctx context.Context, connectionID string) (*Con
 //
 // API Docs: DELETE /v1/connections/{id}
 func (s *ConnectionsService) Delete(ctx context.Context, connectionID string, opts ...RequestOption) error {
-	httpRequest, err := s.client.newRequest(http.MethodDelete, fmt.Sprintf("/v1/connections/%s", url.PathEscape(connectionID)), nil)
+	httpRequest, err := s.client.newRequest(http.MethodDelete, pathf("/v1/connections/%s", connectionID), nil)
 	if err != nil {
 		return err
 	}
@@ -280,7 +279,7 @@ func (s *ConnectionsService) Delete(ctx context.Context, connectionID string, op
 //
 // API Docs: POST /v1/connections/{id}/validate
 func (s *ConnectionsService) Validate(ctx context.Context, connectionID string, opts ...RequestOption) (*Connection, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPost, fmt.Sprintf("/v1/connections/%s/validate", url.PathEscape(connectionID)), map[string]interface{}{})
+	httpRequest, err := s.client.newRequest(http.MethodPost, pathf("/v1/connections/%s/validate", connectionID), map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +306,7 @@ func (s *ConnectionsService) ListAudit(ctx context.Context, connectionID string,
 		setInt(values, "offset", options[0].Offset)
 	}
 
-	httpRequest, err := s.client.newRequest(http.MethodGet, buildPath(fmt.Sprintf("/v1/connections/%s/audit", url.PathEscape(connectionID)), values), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, buildPath(pathf("/v1/connections/%s/audit", connectionID), values), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +337,7 @@ func (s *ConnectionsService) ListLabels(ctx context.Context) ([]ConnectionLabelS
 //
 // API Docs: PATCH /v1/connections/{id}/labels
 func (s *ConnectionsService) UpdateLabels(ctx context.Context, connectionID string, req *ConnectionLabelsUpdate, opts ...RequestOption) (*Connection, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPatch, fmt.Sprintf("/v1/connections/%s/labels", url.PathEscape(connectionID)), req)
+	httpRequest, err := s.client.newRequest(http.MethodPatch, pathf("/v1/connections/%s/labels", connectionID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +358,7 @@ func (s *ConnectionsService) UpdateLabels(ctx context.Context, connectionID stri
 //
 // API Docs: PATCH /v1/connections/{id}/status
 func (s *ConnectionsService) UpdateStatus(ctx context.Context, connectionID string, req *ConnectionStatusUpdate, opts ...RequestOption) (*Connection, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPatch, fmt.Sprintf("/v1/connections/%s/status", url.PathEscape(connectionID)), req)
+	httpRequest, err := s.client.newRequest(http.MethodPatch, pathf("/v1/connections/%s/status", connectionID), req)
 	if err != nil {
 		return nil, err
 	}

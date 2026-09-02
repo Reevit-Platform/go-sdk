@@ -21,6 +21,19 @@ func isPublicPath(path string) bool {
 	return strings.HasPrefix(normalized, "/v1/pay/")
 }
 
+// pathf builds a request path from a format string whose verbs are all %s,
+// percent-encoding every segment with url.PathEscape. Interpolating an id
+// straight into a path lets a value containing "/", "?" or "#" rewrite the
+// request path, so every path with an interpolated identifier must go through
+// this helper rather than fmt.Sprintf.
+func pathf(format string, segs ...string) string {
+	escaped := make([]any, len(segs))
+	for i, seg := range segs {
+		escaped[i] = url.PathEscape(seg)
+	}
+	return fmt.Sprintf(format, escaped...)
+}
+
 func buildPath(path string, values url.Values) string {
 	normalized := normalizePath(path)
 	encoded := values.Encode()

@@ -2,7 +2,6 @@ package reevit
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -151,7 +150,7 @@ func (s *WebhooksService) ListEvents(ctx context.Context, options ...WebhookEven
 
 // GetEvent fetches a single webhook event.
 func (s *WebhooksService) GetEvent(ctx context.Context, eventID string) (*WebhookEvent, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/webhooks/events/%s", eventID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/webhooks/events/%s", eventID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +165,7 @@ func (s *WebhooksService) GetEvent(ctx context.Context, eventID string) (*Webhoo
 
 // ReplayEvent replays a recorded webhook event.
 func (s *WebhooksService) ReplayEvent(ctx context.Context, eventID string, opts ...RequestOption) (map[string]interface{}, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPost, fmt.Sprintf("/v1/webhooks/events/%s/replay", eventID), map[string]interface{}{})
+	httpRequest, err := s.client.newRequest(http.MethodPost, pathf("/v1/webhooks/events/%s/replay", eventID), map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +205,7 @@ func (s *WebhooksService) ListOutbound(ctx context.Context, options ...Paginatio
 
 // GetOutbound fetches a single outbound delivery.
 func (s *WebhooksService) GetOutbound(ctx context.Context, outboundID string) (*OutboundWebhook, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/webhooks/outbound/%s", outboundID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/webhooks/outbound/%s", outboundID), nil)
 	if err != nil {
 		return nil, err
 	}

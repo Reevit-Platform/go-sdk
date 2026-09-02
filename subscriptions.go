@@ -2,7 +2,6 @@ package reevit
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -107,7 +106,7 @@ func (s *SubscriptionsService) List(ctx context.Context, options ...Subscription
 //
 // API Docs: GET /v1/subscriptions/{id}
 func (s *SubscriptionsService) Get(ctx context.Context, subscriptionID string) (*Subscription, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/subscriptions/%s", subscriptionID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/subscriptions/%s", subscriptionID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +123,7 @@ func (s *SubscriptionsService) Get(ctx context.Context, subscriptionID string) (
 //
 // API Docs: PATCH /v1/subscriptions/{id}
 func (s *SubscriptionsService) Update(ctx context.Context, subscriptionID string, req *SubscriptionUpdateRequest, opts ...RequestOption) (*Subscription, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPatch, fmt.Sprintf("/v1/subscriptions/%s", subscriptionID), req)
+	httpRequest, err := s.client.newRequest(http.MethodPatch, pathf("/v1/subscriptions/%s", subscriptionID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +144,7 @@ func (s *SubscriptionsService) Update(ctx context.Context, subscriptionID string
 //
 // API Docs: POST /v1/subscriptions/{id}/cancel
 func (s *SubscriptionsService) Cancel(ctx context.Context, subscriptionID string, opts ...RequestOption) (*Subscription, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPost, fmt.Sprintf("/v1/subscriptions/%s/cancel", subscriptionID), map[string]interface{}{})
+	httpRequest, err := s.client.newRequest(http.MethodPost, pathf("/v1/subscriptions/%s/cancel", subscriptionID), map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +165,7 @@ func (s *SubscriptionsService) Cancel(ctx context.Context, subscriptionID string
 //
 // API Docs: POST /v1/subscriptions/{id}/resume
 func (s *SubscriptionsService) Resume(ctx context.Context, subscriptionID string, opts ...RequestOption) (*Subscription, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPost, fmt.Sprintf("/v1/subscriptions/%s/resume", subscriptionID), map[string]interface{}{})
+	httpRequest, err := s.client.newRequest(http.MethodPost, pathf("/v1/subscriptions/%s/resume", subscriptionID), map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}
