@@ -168,18 +168,20 @@ func (s *ConnectionsService) ListPage(ctx context.Context, options ...Connection
 		return nil, err
 	}
 
-	var page ConnectionListPage
-	if err := json.Unmarshal(raw, &page); err == nil && page.Connections != nil {
-		return &page, nil
+	connections, err := decodeArrayResponse[Connection](raw, "connections")
+	if err != nil {
+		return nil, err
 	}
 
-	var direct []Connection
-	if err := json.Unmarshal(raw, &direct); err != nil {
-		return nil, fmt.Errorf("reevit: decode connections response: %w", err)
+	page := &ConnectionListPage{Connections: connections}
+	if pagination, ok := readConnectionPagination(raw); ok {
+		page.Pagination = pagination
+		return page, nil
 	}
-	page.Connections = direct
-	page.Pagination.Total = int64(len(direct))
-	page.Pagination.Limit = len(direct)
+
+	// A bare array carries no metadata, so synthesise a single full page.
+	page.Pagination.Total = int64(len(connections))
+	page.Pagination.Limit = len(connections)
 	if len(options) > 0 {
 		page.Pagination.Offset = options[0].Offset
 		if options[0].Limit > 0 {
@@ -187,7 +189,35 @@ func (s *ConnectionsService) ListPage(ctx context.Context, options ...Connection
 		}
 	}
 
-	return &page, nil
+	return page, nil
+}
+
+// readConnectionPagination reads pagination metadata from either the flat body
+// ({"connections":[...],"pagination":{...}}) or the nested envelope
+// ({"data":{"connections":[...],"pagination":{...}}}). It reports false when
+// the response carries none, e.g. a bare array.
+func readConnectionPagination(body []byte) (ConnectionPagination, bool) {
+	var envelope struct {
+		Pagination *ConnectionPagination `json:"pagination"`
+		Data       json.RawMessage       `json:"data"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return ConnectionPagination{}, false
+	}
+	if envelope.Pagination != nil {
+		return *envelope.Pagination, true
+	}
+
+	if len(envelope.Data) > 0 {
+		var nested struct {
+			Pagination *ConnectionPagination `json:"pagination"`
+		}
+		if err := json.Unmarshal(envelope.Data, &nested); err == nil && nested.Pagination != nil {
+			return *nested.Pagination, true
+		}
+	}
+
+	return ConnectionPagination{}, false
 }
 
 // ListAll follows pagination until every connection matching the filters has

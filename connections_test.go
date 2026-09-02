@@ -119,3 +119,87 @@ func TestConnectionsListLabels(t *testing.T) {
 		t.Fatalf("labels = %+v", labels)
 	}
 }
+
+// ListPage is the only list endpoint that used to decode its own envelope, so
+// it was the one that would break when the backend ships {"data":[...]}. It
+// now goes through decodeArrayResponse and must accept every shape.
+func TestConnectionsListPageAcceptsEveryEnvelopeShape(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		body           string
+		wantIDs        []string
+		wantPagination ConnectionPagination
+	}{
+		{
+			name:           "bare array",
+			body:           `[{"id":"conn_1"},{"id":"conn_2"}]`,
+			wantIDs:        []string{"conn_1", "conn_2"},
+			wantPagination: ConnectionPagination{Total: 2, Limit: 2, Offset: 0},
+		},
+		{
+			name:           "legacy flat key",
+			body:           `{"connections":[{"id":"conn_1"}],"pagination":{"total":9,"limit":1,"offset":4}}`,
+			wantIDs:        []string{"conn_1"},
+			wantPagination: ConnectionPagination{Total: 9, Limit: 1, Offset: 4},
+		},
+		{
+			name:           "data envelope",
+			body:           `{"data":[{"id":"conn_1"}],"pagination":{"total":9,"limit":1,"offset":4}}`,
+			wantIDs:        []string{"conn_1"},
+			wantPagination: ConnectionPagination{Total: 9, Limit: 1, Offset: 4},
+		},
+		{
+			name:           "double-nested envelope",
+			body:           `{"data":{"connections":[{"id":"conn_1"}],"pagination":{"total":9,"limit":1,"offset":4}}}`,
+			wantIDs:        []string{"conn_1"},
+			wantPagination: ConnectionPagination{Total: 9, Limit: 1, Offset: 4},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient("pfk_test_key", "org_123", WithBaseURL(server.URL))
+			page, err := client.Connections.ListPage(context.Background())
+			if err != nil {
+				t.Fatalf("ListPage: %v", err)
+			}
+
+			ids := make([]string, 0, len(page.Connections))
+			for _, connection := range page.Connections {
+				ids = append(ids, connection.ID)
+			}
+			if !reflect.DeepEqual(ids, tt.wantIDs) {
+				t.Fatalf("IDs = %v, want %v", ids, tt.wantIDs)
+			}
+			if page.Pagination != tt.wantPagination {
+				t.Fatalf("Pagination = %+v, want %+v", page.Pagination, tt.wantPagination)
+			}
+		})
+	}
+}
+
+func TestConnectionsListPageRejectsUnknownShape(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"items":[{"id":"conn_1"}]}`))
+	}))
+	defer server.Close()
+
+	client := NewClient("pfk_test_key", "org_123", WithBaseURL(server.URL))
+	if _, err := client.Connections.ListPage(context.Background()); err == nil {
+		t.Fatal("expected an error for an unrecognised list shape")
+	}
+}
