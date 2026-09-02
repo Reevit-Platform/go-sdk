@@ -78,7 +78,9 @@ func setBool(values url.Values, key string, value *bool) {
 // The legacy flat key is checked before "data" so that today's responses
 // resolve at step 2 and this change is a provable no-op against the current
 // server. Each candidate is tried in order and the first one that unmarshals
-// cleanly into []T wins; only if none of them do we return an error.
+// cleanly into []T wins; if none do, the caller gets an *APIError with code
+// "unexpected_response_shape" -- never an empty slice, which a reconciliation
+// sweep would misread as "no records".
 func decodeArrayResponse[T any](body []byte, key string) ([]T, error) {
 	var direct []T
 	if err := json.Unmarshal(body, &direct); err == nil {
@@ -111,5 +113,9 @@ func decodeArrayResponse[T any](body []byte, key string) ([]T, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("reevit: response did not include %q or a usable %q envelope", key, "data")
+	return nil, &APIError{
+		Code:    "unexpected_response_shape",
+		Message: fmt.Sprintf("response did not include %q or a usable %q envelope", key, "data"),
+		Details: map[string]interface{}{"key": key},
+	}
 }

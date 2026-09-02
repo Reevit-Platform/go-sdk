@@ -1,6 +1,7 @@
 package reevit
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -66,6 +67,30 @@ func TestDecodeArrayResponseErrorsOnTotalMiss(t *testing.T) {
 	_, err := decodeArrayResponse[helperTestItem]([]byte(`{"other":[{"id":"a"}]}`), "customers")
 	if err == nil {
 		t.Fatal("expected an error for a response with no matching key")
+	}
+
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("err = %v, want *APIError", err)
+	}
+	if apiErr.Code != "unexpected_response_shape" {
+		t.Fatalf("Code = %q, want %q", apiErr.Code, "unexpected_response_shape")
+	}
+}
+
+func TestDecodeArrayResponseReturnsEmptyForRecognisedEmptyContainers(t *testing.T) {
+	t.Parallel()
+
+	// An empty list is only ever an empty list when a container we recognise
+	// is present and empty -- never a fallback for a shape we cannot read.
+	for _, body := range []string{`[]`, `{"customers":[]}`, `{"data":[]}`, `{"data":{"customers":[]}}`} {
+		got, err := decodeArrayResponse[helperTestItem]([]byte(body), "customers")
+		if err != nil {
+			t.Fatalf("decodeArrayResponse(%s): %v", body, err)
+		}
+		if len(got) != 0 {
+			t.Fatalf("decodeArrayResponse(%s) = %+v, want empty", body, got)
+		}
 	}
 }
 
