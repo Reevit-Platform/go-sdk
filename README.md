@@ -125,15 +125,13 @@ There are **two types of webhooks** in Reevit:
 package main
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"strings"
+
+	"github.com/Reevit-Platform/go-sdk/webhooks"
 )
 
 // PaymentData represents payment event data
@@ -169,20 +167,6 @@ type WebhookPayload struct {
 	Message   string          `json:"message,omitempty"`
 }
 
-// VerifySignature verifies the webhook signature using HMAC-SHA256
-func VerifySignature(payload []byte, signature, secret string) bool {
-	if !strings.HasPrefix(signature, "sha256=") {
-		return false
-	}
-
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(payload)
-	expected := hex.EncodeToString(mac.Sum(nil))
-	received := signature[7:] // Remove "sha256=" prefix
-
-	return hmac.Equal([]byte(received), []byte(expected))
-}
-
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	// Read the raw body
 	body, err := io.ReadAll(r.Body)
@@ -193,11 +177,12 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	// Get signature and secret
-	signature := r.Header.Get("X-Reevit-Signature")
+	signature := r.Header.Get(webhooks.SignatureHeader)
 	secret := os.Getenv("REEVIT_WEBHOOK_SECRET")
 
-	// Verify signature (required in production)
-	if secret != "" && !VerifySignature(body, signature, secret) {
+	// Verify signature (required in production). webhooks.Verify compares in
+	// constant time -- do not hand-roll this check.
+	if secret != "" && !webhooks.Verify(body, signature, secret) {
 		log.Println("[Webhook] Invalid signature")
 		http.Error(w, "Invalid signature", http.StatusUnauthorized)
 		return
@@ -335,14 +320,42 @@ func main() {
 
 ### Using the webhooks Subpackage
 
-For convenience, use the `webhooks` subpackage:
+Verification lives in the `webhooks` subpackage. Use it rather than writing the
+HMAC by hand: comparing digests with `==` instead of `hmac.Equal` leaves the
+endpoint open to a timing attack, and it is invisible in review.
 
 ```go
 import "github.com/Reevit-Platform/go-sdk/webhooks"
 
-// Verify signature
-isValid := webhooks.VerifySignature(body, signature, secret)
+// Verify the signature over the raw request body, in constant time.
+isValid := webhooks.Verify(body, r.Header.Get(webhooks.SignatureHeader), secret)
 ```
+
+Verify against the exact bytes you received. Unmarshalling and re-marshalling
+the body first changes key order and whitespace, and the signature will not
+match.
+
+To also reject a replayed delivery, use `VerifyWithTolerance`. It checks the
+signature first, then that the `signature_timestamp` inside the signed body is
+within the tolerance of now (five minutes by default):
+
+```go
+err := webhooks.VerifyWithTolerance(body, signature, secret, time.Time{}, 5*time.Minute)
+switch {
+case errors.Is(err, webhooks.ErrInvalidSignature):
+	http.Error(w, "invalid signature", http.StatusUnauthorized)
+	return
+case errors.Is(err, webhooks.ErrTimestampOutsideTolerance):
+	http.Error(w, "delivery too old", http.StatusUnauthorized)
+	return
+case err != nil:
+	http.Error(w, "invalid webhook", http.StatusBadRequest)
+	return
+}
+```
+
+Passing the zero `time.Time` reads `signature_timestamp` out of the payload;
+pass a timestamp explicitly if you have already parsed the body.
 
 ## Supported PSPs
 
