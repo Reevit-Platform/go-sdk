@@ -211,6 +211,7 @@ func (c *Client) doRaw(ctx context.Context, req *http.Request) ([]byte, error) {
 
 	// Check for API errors
 	if resp.StatusCode >= 400 {
+		requestID := requestIDFromHeader(resp.Header)
 		payload := struct {
 			Code    string                 `json:"code"`
 			Message string                 `json:"message"`
@@ -226,6 +227,7 @@ func (c *Client) doRaw(ctx context.Context, req *http.Request) ([]byte, error) {
 				Code:       payload.Code,
 				Message:    message,
 				Details:    payload.Details,
+				RequestID:  requestID,
 			}
 		}
 		if message == "" {
@@ -234,6 +236,7 @@ func (c *Client) doRaw(ctx context.Context, req *http.Request) ([]byte, error) {
 		return nil, &APIError{
 			StatusCode: resp.StatusCode,
 			Message:    message,
+			RequestID:  requestID,
 		}
 	}
 	if resp.StatusCode == http.StatusNoContent {
@@ -242,17 +245,36 @@ func (c *Client) doRaw(ctx context.Context, req *http.Request) ([]byte, error) {
 	return bodyBytes, nil
 }
 
+// requestIDFromHeader returns the correlation id the API echoes on every
+// response, so a merchant opening a support ticket has something to quote.
+func requestIDFromHeader(header http.Header) string {
+	for _, name := range []string{"X-Request-Id", "X-Reevit-Request-Id"} {
+		if value := strings.TrimSpace(header.Get(name)); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
 // APIError represents a Reevit API error.
 type APIError struct {
 	StatusCode int
 	Code       string
 	Message    string
 	Details    map[string]interface{}
+
+	// RequestID is the x-request-id (or x-reevit-request-id) response header.
+	// Quote it when reporting a failure to Reevit support.
+	RequestID string
 }
 
 func (e *APIError) Error() string {
+	message := fmt.Sprintf("reevit: request failed with status %d: %s", e.StatusCode, e.Message)
 	if e.Code != "" {
-		return fmt.Sprintf("reevit: request failed with status %d (%s): %s", e.StatusCode, e.Code, e.Message)
+		message = fmt.Sprintf("reevit: request failed with status %d (%s): %s", e.StatusCode, e.Code, e.Message)
 	}
-	return fmt.Sprintf("reevit: request failed with status %d: %s", e.StatusCode, e.Message)
+	if e.RequestID != "" {
+		message += fmt.Sprintf(" [request id: %s]", e.RequestID)
+	}
+	return message
 }
