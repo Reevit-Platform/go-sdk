@@ -95,6 +95,48 @@ connected PSP matching the supplied filters.
 
 ---
 
+## Errors
+
+Every failed API call returns an `*APIError`:
+
+```go
+payment, err := client.Payments.Get(ctx, paymentID)
+
+var apiErr *reevit.APIError
+if errors.As(err, &apiErr) {
+	log.Printf("status=%d code=%s request_id=%s: %s",
+		apiErr.StatusCode, apiErr.Code, apiErr.RequestID, apiErr.Message)
+}
+```
+
+`RequestID` is the `x-request-id` header the API echoes on every response (with
+an `x-reevit-request-id` fallback). Quote it when reporting a failure to Reevit
+support; `Error()` includes it automatically.
+
+`Code` is the API's error code, plus one code the SDK raises itself:
+
+| Code | Meaning |
+|---|---|
+| `unexpected_response_shape` | A list response matched none of the shapes the SDK understands (`StatusCode` is 0). The SDK never returns an empty slice for an unreadable response -- an empty slice means the server sent an empty list. |
+
+---
+
+## Timeouts
+
+Requests time out after 30 seconds. Override it with `reevit.WithTimeout`:
+
+```go
+client := reevit.NewClient(apiKey, orgID, reevit.WithTimeout(60*time.Second))
+```
+
+A client supplied through `reevit.WithHTTPClient` -- typically to attach a
+tracing or proxying `Transport` -- is copied and inherits that timeout when its
+own `Timeout` is zero, so injecting a client never leaves requests unbounded.
+An explicit `WithTimeout` wins over an injected client's `Timeout` in either
+option order.
+
+---
+
 ## Webhook Verification
 
 Reevit sends webhooks to notify your application of payment events. Always verify webhook signatures.
