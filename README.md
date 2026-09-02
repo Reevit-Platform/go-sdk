@@ -8,7 +8,7 @@ The official Go SDK for [Reevit](https://reevit.io) — a unified payment orches
 ## Installation
 
 ```bash
-go get github.com/Reevit-Platform/go-sdk@v0.9.0
+go get github.com/Reevit-Platform/go-sdk@latest
 ```
 
 ## Quick Start
