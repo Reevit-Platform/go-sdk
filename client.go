@@ -13,8 +13,13 @@ import (
 )
 
 const (
+	// Version is the SDK version. It is reported in both the User-Agent and
+	// the X-Reevit-Client-Version header, which used to be two separate
+	// literals that could drift apart. Keep it in step with the release tag.
+	Version = "0.11.0"
+
 	defaultBaseURL = "https://api.reevit.io"
-	userAgent      = "@reevit/go v0.10.1"
+	userAgent      = "@reevit/go v" + Version
 
 	// defaultTimeout matches the Python/PHP SDK defaults; payment
 	// confirmation calls block on PSP round-trips that routinely exceed 10s.
@@ -172,7 +177,7 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 	}
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("X-Reevit-Client", "@reevit/go")
-	req.Header.Set("X-Reevit-Client-Version", "0.10.1")
+	req.Header.Set("X-Reevit-Client-Version", Version)
 	if strings.TrimSpace(c.apiKey) != "" {
 		req.Header.Set("X-Reevit-Key", c.apiKey)
 	}
