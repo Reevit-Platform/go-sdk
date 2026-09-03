@@ -2,7 +2,6 @@ package reevit
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -108,7 +107,7 @@ func (s *CustomersService) Create(ctx context.Context, req *CreateCustomerReques
 
 // Get fetches a customer by ID.
 func (s *CustomersService) Get(ctx context.Context, customerID string) (*Customer, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/customers/%s", customerID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/customers/%s", customerID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +122,7 @@ func (s *CustomersService) Get(ctx context.Context, customerID string) (*Custome
 
 // Update updates a customer by ID.
 func (s *CustomersService) Update(ctx context.Context, customerID string, req *UpdateCustomerRequest, opts ...RequestOption) (*Customer, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPatch, fmt.Sprintf("/v1/customers/%s", customerID), req)
+	httpRequest, err := s.client.newRequest(http.MethodPatch, pathf("/v1/customers/%s", customerID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +141,7 @@ func (s *CustomersService) Update(ctx context.Context, customerID string, req *U
 
 // Delete removes a customer.
 func (s *CustomersService) Delete(ctx context.Context, customerID string, opts ...RequestOption) error {
-	httpRequest, err := s.client.newRequest(http.MethodDelete, fmt.Sprintf("/v1/customers/%s", customerID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodDelete, pathf("/v1/customers/%s", customerID), nil)
 	if err != nil {
 		return err
 	}
@@ -204,7 +203,7 @@ func (s *CustomersService) ListPayments(ctx context.Context, customerID string, 
 		setInt(values, "offset", options[0].Offset)
 	}
 
-	httpRequest, err := s.client.newRequest(http.MethodGet, buildPath(fmt.Sprintf("/v1/customers/%s/payments", customerID), values), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, buildPath(pathf("/v1/customers/%s/payments", customerID), values), nil)
 	if err != nil {
 		return nil, err
 	}

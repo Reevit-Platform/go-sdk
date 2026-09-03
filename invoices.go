@@ -2,7 +2,6 @@ package reevit
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -64,7 +63,7 @@ func (s *InvoicesService) List(ctx context.Context, options ...InvoiceListOption
 
 // Get fetches an invoice by ID.
 func (s *InvoicesService) Get(ctx context.Context, invoiceID string) (*Invoice, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/invoices/%s", invoiceID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/invoices/%s", invoiceID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +78,7 @@ func (s *InvoicesService) Get(ctx context.Context, invoiceID string) (*Invoice, 
 
 // Update updates an invoice.
 func (s *InvoicesService) Update(ctx context.Context, invoiceID string, req *InvoiceUpdateRequest, opts ...RequestOption) (*Invoice, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPatch, fmt.Sprintf("/v1/invoices/%s", invoiceID), req)
+	httpRequest, err := s.client.newRequest(http.MethodPatch, pathf("/v1/invoices/%s", invoiceID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +97,7 @@ func (s *InvoicesService) Update(ctx context.Context, invoiceID string, req *Inv
 
 // Cancel cancels an invoice.
 func (s *InvoicesService) Cancel(ctx context.Context, invoiceID string, opts ...RequestOption) (*Invoice, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPost, fmt.Sprintf("/v1/invoices/%s/cancel", invoiceID), map[string]interface{}{})
+	httpRequest, err := s.client.newRequest(http.MethodPost, pathf("/v1/invoices/%s/cancel", invoiceID), map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +116,7 @@ func (s *InvoicesService) Cancel(ctx context.Context, invoiceID string, opts ...
 
 // Retry retries invoice collection.
 func (s *InvoicesService) Retry(ctx context.Context, invoiceID string, opts ...RequestOption) (*Invoice, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPost, fmt.Sprintf("/v1/invoices/%s/retry", invoiceID), map[string]interface{}{})
+	httpRequest, err := s.client.newRequest(http.MethodPost, pathf("/v1/invoices/%s/retry", invoiceID), map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,6 @@ package reevit
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -156,15 +155,15 @@ func (s *PayoutsService) List(ctx context.Context, options ...PayoutListOptions)
 }
 
 func (s *PayoutsService) Get(ctx context.Context, payoutID string) (*Payout, error) {
-	return s.payoutAction(ctx, http.MethodGet, fmt.Sprintf("/v1/payouts/%s", payoutID))
+	return s.payoutAction(ctx, http.MethodGet, pathf("/v1/payouts/%s", payoutID))
 }
 
 func (s *PayoutsService) Confirm(ctx context.Context, payoutID string) (*Payout, error) {
-	return s.payoutAction(ctx, http.MethodPost, fmt.Sprintf("/v1/payouts/%s/confirm", payoutID))
+	return s.payoutAction(ctx, http.MethodPost, pathf("/v1/payouts/%s/confirm", payoutID))
 }
 
 func (s *PayoutsService) Cancel(ctx context.Context, payoutID string) (*Payout, error) {
-	return s.payoutAction(ctx, http.MethodPost, fmt.Sprintf("/v1/payouts/%s/cancel", payoutID))
+	return s.payoutAction(ctx, http.MethodPost, pathf("/v1/payouts/%s/cancel", payoutID))
 }
 
 func (s *PayoutsService) payoutAction(ctx context.Context, method, path string) (*Payout, error) {
@@ -259,7 +258,7 @@ func (s *PayoutsService) ListBeneficiaries(ctx context.Context, options ...Pagin
 }
 
 func (s *PayoutsService) GetBeneficiary(ctx context.Context, beneficiaryID string) (*SavedBeneficiary, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/beneficiaries/%s", beneficiaryID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/beneficiaries/%s", beneficiaryID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +270,7 @@ func (s *PayoutsService) GetBeneficiary(ctx context.Context, beneficiaryID strin
 }
 
 func (s *PayoutsService) DeleteBeneficiary(ctx context.Context, beneficiaryID string) error {
-	httpRequest, err := s.client.newRequest(http.MethodDelete, fmt.Sprintf("/v1/beneficiaries/%s", beneficiaryID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodDelete, pathf("/v1/beneficiaries/%s", beneficiaryID), nil)
 	if err != nil {
 		return err
 	}

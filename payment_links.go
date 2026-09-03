@@ -2,7 +2,6 @@ package reevit
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -102,7 +101,7 @@ func (s *PaymentLinksService) Create(ctx context.Context, req *CreatePaymentLink
 
 // Get fetches a payment link by ID.
 func (s *PaymentLinksService) Get(ctx context.Context, paymentLinkID string) (*PaymentLink, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/payment-links/%s", paymentLinkID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/payment-links/%s", paymentLinkID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +116,7 @@ func (s *PaymentLinksService) Get(ctx context.Context, paymentLinkID string) (*P
 
 // Update updates a payment link.
 func (s *PaymentLinksService) Update(ctx context.Context, paymentLinkID string, req *UpdatePaymentLinkRequest, opts ...RequestOption) (*PaymentLink, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPatch, fmt.Sprintf("/v1/payment-links/%s", paymentLinkID), req)
+	httpRequest, err := s.client.newRequest(http.MethodPatch, pathf("/v1/payment-links/%s", paymentLinkID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +135,7 @@ func (s *PaymentLinksService) Update(ctx context.Context, paymentLinkID string, 
 
 // Delete removes a payment link.
 func (s *PaymentLinksService) Delete(ctx context.Context, paymentLinkID string, opts ...RequestOption) error {
-	httpRequest, err := s.client.newRequest(http.MethodDelete, fmt.Sprintf("/v1/payment-links/%s", paymentLinkID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodDelete, pathf("/v1/payment-links/%s", paymentLinkID), nil)
 	if err != nil {
 		return err
 	}
@@ -150,7 +149,7 @@ func (s *PaymentLinksService) Delete(ctx context.Context, paymentLinkID string, 
 
 // GetStats returns aggregate stats for a payment link.
 func (s *PaymentLinksService) GetStats(ctx context.Context, paymentLinkID string) (*PaymentLinkStats, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/payment-links/%s/stats", paymentLinkID), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/payment-links/%s/stats", paymentLinkID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +170,7 @@ func (s *PaymentLinksService) ListPayments(ctx context.Context, paymentLinkID st
 		setInt(values, "offset", options[0].Offset)
 	}
 
-	httpRequest, err := s.client.newRequest(http.MethodGet, buildPath(fmt.Sprintf("/v1/payment-links/%s/payments", paymentLinkID), values), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, buildPath(pathf("/v1/payment-links/%s/payments", paymentLinkID), values), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +185,7 @@ func (s *PaymentLinksService) ListPayments(ctx context.Context, paymentLinkID st
 
 // GetByCode resolves a public payment link by code.
 func (s *PaymentLinksService) GetByCode(ctx context.Context, code string) (*PaymentLink, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/pay/%s", code), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/pay/%s", code), nil)
 	if err != nil {
 		return nil, err
 	}

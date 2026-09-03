@@ -3,7 +3,6 @@ package reevit
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -168,18 +167,20 @@ func (s *ConnectionsService) ListPage(ctx context.Context, options ...Connection
 		return nil, err
 	}
 
-	var page ConnectionListPage
-	if err := json.Unmarshal(raw, &page); err == nil && page.Connections != nil {
-		return &page, nil
+	connections, err := decodeArrayResponse[Connection](raw, "connections")
+	if err != nil {
+		return nil, err
 	}
 
-	var direct []Connection
-	if err := json.Unmarshal(raw, &direct); err != nil {
-		return nil, fmt.Errorf("reevit: decode connections response: %w", err)
+	page := &ConnectionListPage{Connections: connections}
+	if pagination, ok := readConnectionPagination(raw); ok {
+		page.Pagination = pagination
+		return page, nil
 	}
-	page.Connections = direct
-	page.Pagination.Total = int64(len(direct))
-	page.Pagination.Limit = len(direct)
+
+	// A bare array carries no metadata, so synthesise a single full page.
+	page.Pagination.Total = int64(len(connections))
+	page.Pagination.Limit = len(connections)
 	if len(options) > 0 {
 		page.Pagination.Offset = options[0].Offset
 		if options[0].Limit > 0 {
@@ -187,7 +188,35 @@ func (s *ConnectionsService) ListPage(ctx context.Context, options ...Connection
 		}
 	}
 
-	return &page, nil
+	return page, nil
+}
+
+// readConnectionPagination reads pagination metadata from either the flat body
+// ({"connections":[...],"pagination":{...}}) or the nested envelope
+// ({"data":{"connections":[...],"pagination":{...}}}). It reports false when
+// the response carries none, e.g. a bare array.
+func readConnectionPagination(body []byte) (ConnectionPagination, bool) {
+	var envelope struct {
+		Pagination *ConnectionPagination `json:"pagination"`
+		Data       json.RawMessage       `json:"data"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return ConnectionPagination{}, false
+	}
+	if envelope.Pagination != nil {
+		return *envelope.Pagination, true
+	}
+
+	if len(envelope.Data) > 0 {
+		var nested struct {
+			Pagination *ConnectionPagination `json:"pagination"`
+		}
+		if err := json.Unmarshal(envelope.Data, &nested); err == nil && nested.Pagination != nil {
+			return *nested.Pagination, true
+		}
+	}
+
+	return ConnectionPagination{}, false
 }
 
 // ListAll follows pagination until every connection matching the filters has
@@ -217,7 +246,7 @@ func (s *ConnectionsService) ListAll(ctx context.Context, filters ConnectionList
 //
 // API Docs: GET /v1/connections/{id}
 func (s *ConnectionsService) Get(ctx context.Context, connectionID string) (*Connection, error) {
-	httpRequest, err := s.client.newRequest(http.MethodGet, fmt.Sprintf("/v1/connections/%s", url.PathEscape(connectionID)), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, pathf("/v1/connections/%s", connectionID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +263,7 @@ func (s *ConnectionsService) Get(ctx context.Context, connectionID string) (*Con
 //
 // API Docs: DELETE /v1/connections/{id}
 func (s *ConnectionsService) Delete(ctx context.Context, connectionID string, opts ...RequestOption) error {
-	httpRequest, err := s.client.newRequest(http.MethodDelete, fmt.Sprintf("/v1/connections/%s", url.PathEscape(connectionID)), nil)
+	httpRequest, err := s.client.newRequest(http.MethodDelete, pathf("/v1/connections/%s", connectionID), nil)
 	if err != nil {
 		return err
 	}
@@ -250,7 +279,7 @@ func (s *ConnectionsService) Delete(ctx context.Context, connectionID string, op
 //
 // API Docs: POST /v1/connections/{id}/validate
 func (s *ConnectionsService) Validate(ctx context.Context, connectionID string, opts ...RequestOption) (*Connection, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPost, fmt.Sprintf("/v1/connections/%s/validate", url.PathEscape(connectionID)), map[string]interface{}{})
+	httpRequest, err := s.client.newRequest(http.MethodPost, pathf("/v1/connections/%s/validate", connectionID), map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +306,7 @@ func (s *ConnectionsService) ListAudit(ctx context.Context, connectionID string,
 		setInt(values, "offset", options[0].Offset)
 	}
 
-	httpRequest, err := s.client.newRequest(http.MethodGet, buildPath(fmt.Sprintf("/v1/connections/%s/audit", url.PathEscape(connectionID)), values), nil)
+	httpRequest, err := s.client.newRequest(http.MethodGet, buildPath(pathf("/v1/connections/%s/audit", connectionID), values), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +337,7 @@ func (s *ConnectionsService) ListLabels(ctx context.Context) ([]ConnectionLabelS
 //
 // API Docs: PATCH /v1/connections/{id}/labels
 func (s *ConnectionsService) UpdateLabels(ctx context.Context, connectionID string, req *ConnectionLabelsUpdate, opts ...RequestOption) (*Connection, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPatch, fmt.Sprintf("/v1/connections/%s/labels", url.PathEscape(connectionID)), req)
+	httpRequest, err := s.client.newRequest(http.MethodPatch, pathf("/v1/connections/%s/labels", connectionID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +358,7 @@ func (s *ConnectionsService) UpdateLabels(ctx context.Context, connectionID stri
 //
 // API Docs: PATCH /v1/connections/{id}/status
 func (s *ConnectionsService) UpdateStatus(ctx context.Context, connectionID string, req *ConnectionStatusUpdate, opts ...RequestOption) (*Connection, error) {
-	httpRequest, err := s.client.newRequest(http.MethodPatch, fmt.Sprintf("/v1/connections/%s/status", url.PathEscape(connectionID)), req)
+	httpRequest, err := s.client.newRequest(http.MethodPatch, pathf("/v1/connections/%s/status", connectionID), req)
 	if err != nil {
 		return nil, err
 	}

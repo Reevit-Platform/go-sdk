@@ -1,6 +1,7 @@
 package reevit
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -67,6 +68,30 @@ func TestDecodeArrayResponseErrorsOnTotalMiss(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error for a response with no matching key")
 	}
+
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("err = %v, want *APIError", err)
+	}
+	if apiErr.Code != "unexpected_response_shape" {
+		t.Fatalf("Code = %q, want %q", apiErr.Code, "unexpected_response_shape")
+	}
+}
+
+func TestDecodeArrayResponseReturnsEmptyForRecognisedEmptyContainers(t *testing.T) {
+	t.Parallel()
+
+	// An empty list is only ever an empty list when a container we recognise
+	// is present and empty -- never a fallback for a shape we cannot read.
+	for _, body := range []string{`[]`, `{"customers":[]}`, `{"data":[]}`, `{"data":{"customers":[]}}`} {
+		got, err := decodeArrayResponse[helperTestItem]([]byte(body), "customers")
+		if err != nil {
+			t.Fatalf("decodeArrayResponse(%s): %v", body, err)
+		}
+		if len(got) != 0 {
+			t.Fatalf("decodeArrayResponse(%s) = %+v, want empty", body, got)
+		}
+	}
 }
 
 func TestDecodeArrayResponsePrefersLegacyKeyOverData(t *testing.T) {
@@ -83,5 +108,52 @@ func TestDecodeArrayResponsePrefersLegacyKeyOverData(t *testing.T) {
 	want := []helperTestItem{{ID: "legacy"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("decodeArrayResponse = %+v, want %+v", got, want)
+	}
+}
+
+func TestPathfEscapesEverySegment(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		format string
+		segs   []string
+		want   string
+	}{
+		{
+			name:   "plain id",
+			format: "/v1/payments/%s",
+			segs:   []string{"pay_123"},
+			want:   "/v1/payments/pay_123",
+		},
+		{
+			name:   "id with a slash cannot add a path segment",
+			format: "/v1/payments/%s",
+			segs:   []string{"pay_123/refund"},
+			want:   "/v1/payments/pay_123%2Frefund",
+		},
+		{
+			name:   "id with a query or fragment cannot truncate the path",
+			format: "/v1/payments/%s/confirm",
+			segs:   []string{"pay?a=1#b"},
+			want:   "/v1/payments/pay%3Fa=1%23b/confirm",
+		},
+		{
+			name:   "multiple segments",
+			format: "/v1/customers/%s/payments/%s",
+			segs:   []string{"cus/1", "pay/2"},
+			want:   "/v1/customers/cus%2F1/payments/pay%2F2",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := pathf(tt.format, tt.segs...); got != tt.want {
+				t.Fatalf("pathf = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }

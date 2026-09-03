@@ -15,6 +15,10 @@ import (
 const (
 	defaultBaseURL = "https://api.reevit.io"
 	userAgent      = "@reevit/go v0.10.1"
+
+	// defaultTimeout matches the Python/PHP SDK defaults; payment
+	// confirmation calls block on PSP round-trips that routinely exceed 10s.
+	defaultTimeout = 30 * time.Second
 )
 
 // Client is the Reevit API client.
@@ -23,6 +27,12 @@ type Client struct {
 	apiKey     string
 	orgID      string
 	httpClient *http.Client
+
+	// timeout is the per-request timeout applied to httpClient. It is kept
+	// on the Client so that a caller-supplied http.Client (WithHTTPClient)
+	// still gets a bound, instead of silently becoming unbounded.
+	timeout         time.Duration
+	timeoutExplicit bool
 
 	common service // Reuse a single struct instead of allocating one for each service on the heap.
 
@@ -55,27 +65,58 @@ func WithBaseURL(url string) Option {
 }
 
 // WithHTTPClient sets the HTTP client used for requests.
+//
+// The client is shallow-copied so the caller's value is never mutated. If its
+// Timeout is zero -- the normal case when a client is injected only to attach
+// a custom Transport for tracing or proxying -- the SDK's timeout (30s, or
+// whatever WithTimeout sets) is applied to the copy. Without that, a hung PSP
+// round-trip would block the calling goroutine forever and leak connections.
 func WithHTTPClient(httpClient *http.Client) Option {
 	return func(c *Client) {
-		c.httpClient = httpClient
+		if httpClient == nil {
+			return
+		}
+		clone := *httpClient
+		c.httpClient = &clone
+	}
+}
+
+// WithTimeout overrides the per-request timeout (30s by default).
+//
+// An explicit WithTimeout wins over the Timeout of a client passed to
+// WithHTTPClient regardless of option order. Non-positive durations are
+// ignored; use context.WithCancel if you need an unbounded request.
+func WithTimeout(timeout time.Duration) Option {
+	return func(c *Client) {
+		if timeout <= 0 {
+			return
+		}
+		c.timeout = timeout
+		c.timeoutExplicit = true
 	}
 }
 
 // NewClient returns a new Reevit API client.
 func NewClient(apiKey, orgID string, opts ...Option) *Client {
 	c := &Client{
-		baseURL: defaultBaseURL,
-		apiKey:  apiKey,
-		orgID:   orgID,
-		httpClient: &http.Client{
-			// 30s matches the Python/PHP SDK defaults; payment confirmation
-			// calls block on PSP round-trips that routinely exceed 10s.
-			Timeout: 30 * time.Second,
-		},
+		baseURL:    defaultBaseURL,
+		apiKey:     apiKey,
+		orgID:      orgID,
+		httpClient: &http.Client{},
+		timeout:    defaultTimeout,
 	}
 
 	for _, opt := range opts {
 		opt(c)
+	}
+
+	// Resolve the effective timeout after every option has run so that
+	// WithTimeout and WithHTTPClient compose in either order.
+	if c.httpClient == nil {
+		c.httpClient = &http.Client{}
+	}
+	if c.timeoutExplicit || c.httpClient.Timeout == 0 {
+		c.httpClient.Timeout = c.timeout
 	}
 
 	c.common.client = c
@@ -170,6 +211,7 @@ func (c *Client) doRaw(ctx context.Context, req *http.Request) ([]byte, error) {
 
 	// Check for API errors
 	if resp.StatusCode >= 400 {
+		requestID := requestIDFromHeader(resp.Header)
 		payload := struct {
 			Code    string                 `json:"code"`
 			Message string                 `json:"message"`
@@ -185,6 +227,7 @@ func (c *Client) doRaw(ctx context.Context, req *http.Request) ([]byte, error) {
 				Code:       payload.Code,
 				Message:    message,
 				Details:    payload.Details,
+				RequestID:  requestID,
 			}
 		}
 		if message == "" {
@@ -193,6 +236,7 @@ func (c *Client) doRaw(ctx context.Context, req *http.Request) ([]byte, error) {
 		return nil, &APIError{
 			StatusCode: resp.StatusCode,
 			Message:    message,
+			RequestID:  requestID,
 		}
 	}
 	if resp.StatusCode == http.StatusNoContent {
@@ -201,17 +245,36 @@ func (c *Client) doRaw(ctx context.Context, req *http.Request) ([]byte, error) {
 	return bodyBytes, nil
 }
 
+// requestIDFromHeader returns the correlation id the API echoes on every
+// response, so a merchant opening a support ticket has something to quote.
+func requestIDFromHeader(header http.Header) string {
+	for _, name := range []string{"X-Request-Id", "X-Reevit-Request-Id"} {
+		if value := strings.TrimSpace(header.Get(name)); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
 // APIError represents a Reevit API error.
 type APIError struct {
 	StatusCode int
 	Code       string
 	Message    string
 	Details    map[string]interface{}
+
+	// RequestID is the x-request-id (or x-reevit-request-id) response header.
+	// Quote it when reporting a failure to Reevit support.
+	RequestID string
 }
 
 func (e *APIError) Error() string {
+	message := fmt.Sprintf("reevit: request failed with status %d: %s", e.StatusCode, e.Message)
 	if e.Code != "" {
-		return fmt.Sprintf("reevit: request failed with status %d (%s): %s", e.StatusCode, e.Code, e.Message)
+		message = fmt.Sprintf("reevit: request failed with status %d (%s): %s", e.StatusCode, e.Code, e.Message)
 	}
-	return fmt.Sprintf("reevit: request failed with status %d: %s", e.StatusCode, e.Message)
+	if e.RequestID != "" {
+		message += fmt.Sprintf(" [request id: %s]", e.RequestID)
+	}
+	return message
 }

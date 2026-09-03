@@ -8,7 +8,7 @@ The official Go SDK for [Reevit](https://reevit.io) — a unified payment orches
 ## Installation
 
 ```bash
-go get github.com/Reevit-Platform/go-sdk@v0.9.0
+go get github.com/Reevit-Platform/go-sdk@latest
 ```
 
 ## Quick Start
@@ -95,6 +95,48 @@ connected PSP matching the supplied filters.
 
 ---
 
+## Errors
+
+Every failed API call returns an `*APIError`:
+
+```go
+payment, err := client.Payments.Get(ctx, paymentID)
+
+var apiErr *reevit.APIError
+if errors.As(err, &apiErr) {
+	log.Printf("status=%d code=%s request_id=%s: %s",
+		apiErr.StatusCode, apiErr.Code, apiErr.RequestID, apiErr.Message)
+}
+```
+
+`RequestID` is the `x-request-id` header the API echoes on every response (with
+an `x-reevit-request-id` fallback). Quote it when reporting a failure to Reevit
+support; `Error()` includes it automatically.
+
+`Code` is the API's error code, plus one code the SDK raises itself:
+
+| Code | Meaning |
+|---|---|
+| `unexpected_response_shape` | A list response matched none of the shapes the SDK understands (`StatusCode` is 0). The SDK never returns an empty slice for an unreadable response -- an empty slice means the server sent an empty list. |
+
+---
+
+## Timeouts
+
+Requests time out after 30 seconds. Override it with `reevit.WithTimeout`:
+
+```go
+client := reevit.NewClient(apiKey, orgID, reevit.WithTimeout(60*time.Second))
+```
+
+A client supplied through `reevit.WithHTTPClient` -- typically to attach a
+tracing or proxying `Transport` -- is copied and inherits that timeout when its
+own `Timeout` is zero, so injecting a client never leaves requests unbounded.
+An explicit `WithTimeout` wins over an injected client's `Timeout` in either
+option order.
+
+---
+
 ## Webhook Verification
 
 Reevit sends webhooks to notify your application of payment events. Always verify webhook signatures.
@@ -125,15 +167,13 @@ There are **two types of webhooks** in Reevit:
 package main
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"strings"
+
+	"github.com/Reevit-Platform/go-sdk/webhooks"
 )
 
 // PaymentData represents payment event data
@@ -169,20 +209,6 @@ type WebhookPayload struct {
 	Message   string          `json:"message,omitempty"`
 }
 
-// VerifySignature verifies the webhook signature using HMAC-SHA256
-func VerifySignature(payload []byte, signature, secret string) bool {
-	if !strings.HasPrefix(signature, "sha256=") {
-		return false
-	}
-
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(payload)
-	expected := hex.EncodeToString(mac.Sum(nil))
-	received := signature[7:] // Remove "sha256=" prefix
-
-	return hmac.Equal([]byte(received), []byte(expected))
-}
-
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	// Read the raw body
 	body, err := io.ReadAll(r.Body)
@@ -193,11 +219,12 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	// Get signature and secret
-	signature := r.Header.Get("X-Reevit-Signature")
+	signature := r.Header.Get(webhooks.SignatureHeader)
 	secret := os.Getenv("REEVIT_WEBHOOK_SECRET")
 
-	// Verify signature (required in production)
-	if secret != "" && !VerifySignature(body, signature, secret) {
+	// Verify signature (required in production). webhooks.Verify compares in
+	// constant time -- do not hand-roll this check.
+	if secret != "" && !webhooks.Verify(body, signature, secret) {
 		log.Println("[Webhook] Invalid signature")
 		http.Error(w, "Invalid signature", http.StatusUnauthorized)
 		return
@@ -335,14 +362,42 @@ func main() {
 
 ### Using the webhooks Subpackage
 
-For convenience, use the `webhooks` subpackage:
+Verification lives in the `webhooks` subpackage. Use it rather than writing the
+HMAC by hand: comparing digests with `==` instead of `hmac.Equal` leaves the
+endpoint open to a timing attack, and it is invisible in review.
 
 ```go
 import "github.com/Reevit-Platform/go-sdk/webhooks"
 
-// Verify signature
-isValid := webhooks.VerifySignature(body, signature, secret)
+// Verify the signature over the raw request body, in constant time.
+isValid := webhooks.Verify(body, r.Header.Get(webhooks.SignatureHeader), secret)
 ```
+
+Verify against the exact bytes you received. Unmarshalling and re-marshalling
+the body first changes key order and whitespace, and the signature will not
+match.
+
+To also reject a replayed delivery, use `VerifyWithTolerance`. It checks the
+signature first, then that the `signature_timestamp` inside the signed body is
+within the tolerance of now (five minutes by default):
+
+```go
+err := webhooks.VerifyWithTolerance(body, signature, secret, time.Time{}, 5*time.Minute)
+switch {
+case errors.Is(err, webhooks.ErrInvalidSignature):
+	http.Error(w, "invalid signature", http.StatusUnauthorized)
+	return
+case errors.Is(err, webhooks.ErrTimestampOutsideTolerance):
+	http.Error(w, "delivery too old", http.StatusUnauthorized)
+	return
+case err != nil:
+	http.Error(w, "invalid webhook", http.StatusBadRequest)
+	return
+}
+```
+
+Passing the zero `time.Time` reads `signature_timestamp` out of the payload;
+pass a timestamp explicitly if you have already parsed the body.
 
 ## Supported PSPs
 
